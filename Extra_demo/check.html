@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify Quantity Discount System</title>
+    <style>
+        :root {
+            --primary: #5e6ac2;
+            --primary-dark: #3a47a1;
+            --secondary: #e1e5eb;
+            --success: #008060;
+            --danger: #d82c0d;
+            --text: #202223;
+            --text-light: #6d7175;
+            --bg: #f6f6f7;
+            --white: #ffffff;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-align: center;
+            grid-column: 1 / -1;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--secondary);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        button.danger {
+            background-color: var(--danger);
+        }
+        
+        button.danger:hover {
+            background-color: #b3240a;
+        }
+        
+        .discount-rule {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: var(--bg);
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .discount-details {
+            flex-grow: 1;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .product {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid var(--secondary);
+        }
+        
+        .product-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .product-image {
+            width: 60px;
+            height: 60px;
+            background-color: var(--secondary);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+        }
+        
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .quantity-btn {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--secondary);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .cart-total {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--secondary);
+            text-align: right;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .discount-applied {
+            color: var(--success);
+            margin-top: 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-light);
+        }
+    </style>
+</head>
+<body>
+    <h1>Shopify Quantity Discount System</h1>
+    
+    <div class="container">
+        <!-- Admin Panel Section -->
+        <div class="card">
+            <h2>Discount Rule Management</h2>
+            
+            <form id="discount-form">
+                <div class="form-group">
+                    <label for="min-quantity">Minimum Quantity</label>
+                    <input type="number" id="min-quantity" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="max-quantity">Maximum Quantity (0 for no maximum)</label>
+                    <input type="number" id="max-quantity" min="0" value="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="discount-type">Discount Type</label>
+                    <select id="discount-type" required>
+                        <option value="percentage">Percentage</option>
+                        <option value="fixed">Fixed Amount</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="discount-value">Discount Value</label>
+                    <input type="number" id="discount-value" min="1" required>
+                </div>
+                
+                <button type="submit">Add Discount Rule</button>
+            </form>
+            
+            <h3 style="margin-top: 30px;">Active Discount Rules</h3>
+            <div id="discount-rules">
+                <div class="empty-state">No discount rules added yet</div>
+            </div>
+        </div>
+        
+        <!-- Checkout Simulation Section -->
+        <div class="card">
+            <h2>Checkout Simulation</h2>
+            
+            <div id="cart-items">
+                <div class="product">
+                    <div class="product-info">
+                        <div class="product-image">Product</div>
+                        <div>
+                            <div>Sample Product</div>
+                            <div>$25.00</div>
+                        </div>
+                    </div>
+                    <div class="quantity-controls">
+                        <button class="quantity-btn" onclick="updateQuantity(-1)">-</button>
+                        <span id="quantity">1</span>
+                        <button class="quantity-btn" onclick="updateQuantity(1)">+</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cart-total">
+                Total: $<span id="total">25.00</span>
+                <div id="discount-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store discount rules
+        let discountRules = [];
+        let currentQuantity = 1;
+        const productPrice = 25.00;
+        
+        // DOM elements
+        const discountForm = document.getElementById('discount-form');
+        const discountRulesContainer = document.getElementById('discount-rules');
+        const quantityElement = document.getElementById('quantity');
+        const totalElement = document.getElementById('total');
+        const discountMessageElement = document.getElementById('discount-message');
+        
+        // Add discount rule
+        discountForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const minQuantity = parseInt(document.getElementById('min-quantity').value);
+            const maxQuantity = parseInt(document.getElementById('max-quantity').value);
+            const discountType = document.getElementById('discount-type').value;
+            const discountValue = parseFloat(document.getElementById('discount-value').value);
+            
+            // Validate inputs
+            if (minQuantity <= 0) {
+                alert('Minimum quantity must be at least 1');
+                return;
+            }
+            
+            if (maxQuantity > 0 && maxQuantity <= minQuantity) {
+                alert('Maximum quantity must be greater than minimum quantity');
+                return;
+            }
+            
+            if (discountValue <= 0) {
+                alert('Discount value must be greater than 0');
+                return;
+            }
+            
+            if (discountType === 'percentage' && discountValue > 100) {
+                alert('Percentage discount cannot exceed 100%');
+                return;
+            }
+            
+            // Add the new rule
+            const newRule = {
+                id: Date.now(), // Unique ID
+                minQuantity,
+                maxQuantity: maxQuantity === 0 ? Infinity : maxQuantity,
+                discountType,
+                discountValue
+            };
+            
+            discountRules.push(newRule);
+            renderDiscountRules();
+            applyDiscounts();
+            
+            // Reset form
+            discountForm.reset();
+            document.getElementById('max-quantity').value = 0;
+        });
+        
+        // Render discount rules
+        function renderDiscountRules() {
+            if (discountRules.length === 0) {
+                discountRulesContainer.innerHTML = '<div class="empty-state">No discount rules added yet</div>';
+                return;
+            }
+            
+            discountRulesContainer.innerHTML = '';
+            
+            discountRules.forEach(rule => {
+                const ruleElement = document.createElement('div');
+                ruleElement.className = 'discount-rule';
+                
+                const maxDisplay = rule.maxQuantity === Infinity ? '+' : rule.maxQuantity;
+                const discountDisplay = rule.discountType === 'percentage' 
+                    ? `${rule.discountValue}%` 
+                    : `$${rule.discountValue.toFixed(2)}`;
+                
+                ruleElement.innerHTML = `
+                    <div class="discount-details">
+                        <strong>Buy ${rule.minQuantity}-${maxDisplay}</strong> → ${discountDisplay} off
+                    </div>
+                    <div class="actions">
+                        <button class="danger" onclick="deleteRule(${rule.id})">Delete</button>
+                    </div>
+                `;
+                
+                discountRulesContainer.appendChild(ruleElement);
+            });
+        }
+        
+        // Delete discount rule
+        function deleteRule(id) {
+            discountRules = discountRules.filter(rule => rule.id !== id);
+            renderDiscountRules();
+            applyDiscounts();
+        }
+        
+        // Update product quantity
+        function updateQuantity(change) {
+            currentQuantity += change;
+            
+            if (currentQuantity < 1) {
+                currentQuantity = 1;
+            }
+            
+            quantityElement.textContent = currentQuantity;
+            applyDiscounts();
+        }
+        
+        // Apply discounts based on quantity
+        function applyDiscounts() {
+            let total = currentQuantity * productPrice;
+            let discountApplied = 0;
+            let applicableRule = null;
+            
+            // Find the applicable discount rule
+            for (const rule of discountRules) {
+                if (currentQuantity >= rule.minQuantity && currentQuantity <= rule.maxQuantity) {
+                    applicableRule = rule;
+                    break;
+                }
+            }
+            
+            // Apply discount if a rule is applicable
+            if (applicableRule) {
+                if (applicableRule.discountType === 'percentage') {
+                    discountApplied = total * (applicableRule.discountValue / 100);
+                } else {
+                    discountApplied = applicableRule.discountValue * currentQuantity;
+                }
+                
+                total -= discountApplied;
+                
+                const maxDisplay = applicableRule.maxQuantity === Infinity ? '+' : applicableRule.maxQuantity;
+                discountMessageElement.innerHTML = `<div class="discount-applied">Discount applied: ${applicableRule.discountValue}${applicableRule.discountType === 'percentage' ? '%' : '$'} off for buying ${applicableRule.minQuantity}-${maxDisplay} units</div>`;
+            } else {
+                discountMessageElement.innerHTML = '';
+            }
+            
+            totalElement.textContent = total.toFixed(2);
+        }
+        
+        // Initialize
+        renderDiscountRules();
+    </script>
+</body>
+</html>
